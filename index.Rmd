@@ -1,0 +1,213 @@
+---
+title: "How to Beat The Thai Market With Value Investing"
+author: "Charin Polpanumas"
+date: "February 18, 2559 BE"
+output:
+  html_document:
+    toc: true
+    number_sections: true
+    theme: spacelab
+---
+
+# Executive Summary
+
+We set out to find whether value investing strategy such as Joel Greenblatt's earning yields and Piotroski's F-score can actually beat the Thai stock market. The fundamental data are obtained from [Gurufocus](http://gurufocus.com) while the benchmark SET TRI is obtained from [Stock Exchange of Thailand](http://set.or.th). We perform support vector machine, boosted logistic regression and random forest classification based on the data, as well as a backtest to verify the models. Most our models perform better than a coin toss with random forest achieving the highest accuracy and sensitivity of 85.13% and 79.25% respectively (20.08% annual return).
+
+# Data Processing
+
+Attach necessary R packages and set seed for reproduciblity.
+
+```{r,results='hide',message=FALSE, warning=FALSE}
+#plotting
+library(ggplot2)
+library(gridExtra)
+#For caret package
+library(lattice)
+library(caret)
+#For svm
+library(e1071)
+#For gbm
+library(gbm)
+library(survival)
+library(splines)
+library(parallel)
+library(plyr)
+#For rf
+library(randomForest)
+#Set seed for reproducibility
+set.seed(385)
+```
+
+Read and subset the data containing ```valuation ratios```, ```valuation and quality indicators```, ```common size ratios```, and ```per share data```. These variables are the go-to components of various value investing strategies such as Joel Greenblatt's Magic Numbers, Peter Lynch's fair value, Piotroski F-score, and other fundamental criteria. For more information on variables included, see the [codebook](codebook.html). We only get those with complete cases due to requirement of the analysis.
+
+```{r,results='hide'}
+#Read dataset
+udf<-read.csv('udf.csv')
+
+#Subset data for analysis
+dat<-udf[,c(2,3,116:152,155:184,187:189)]
+
+#Get only with complete cases
+dat<-dat[complete.cases(dat),]
+```
+
+The price growth variable ```priceg``` is skewed to the right; that is, we tend to have extreme positive price growth as large as 2,733%. Since events outside the scope of value investing strategies, such as transitioning from one industry to another, merger and acquisition or even share splitting mistakes, might cause these extreme values, we decide to remove outliers beyond median plus/minus three standard deviations (12 observations were removed).
+
+```{r,results='hide'}
+#Central values with outliers
+med<-median(dat$priceg)
+upper <-med+sd(dat$priceg)*3
+lower <-med-sd(dat$priceg)*3
+
+#Plot with outliers
+g<-ggplot(dat,aes(x=priceg))+geom_density()+xlab('priceg with Outliers, median and 3SD')
+g<-g+geom_vline(aes(xintercept=mean(priceg, na.rm=T)),color="red") #add median
+g<-g+geom_vline(aes(xintercept=upper),color="blue") #add upper
+g<-g+geom_vline(aes(xintercept=lower),color="blue") #add upper
+
+#Remove outliers
+dat<-dat[dat$priceg>lower&dat$priceg<upper,]
+#Central values without outliers
+med<-median(dat$priceg)
+upper <-med+sd(dat$priceg)*3
+lower <-med-sd(dat$priceg)*3
+
+#Plot without outliers
+h<-ggplot(dat,aes(x=priceg))+geom_density()+xlab('priceg without Outliers, median and 3SD')
+h<-h+geom_vline(aes(xintercept=mean(priceg, na.rm=T)),color="red") #add median
+h<-h+geom_vline(aes(xintercept=upper),color="blue") #add upper
+h<-h+geom_vline(aes(xintercept=lower),color="blue") #add upper
+
+#Plot both
+grid.arrange(g,h,ncol=1)
+```
+
+We create the ```winloss``` variable as a binary dependent variable of if the stock *win* or *lose* against the market.
+
+```{r,results='hide'}
+#Create winloss variable as dependent
+dat$winloss <- ifelse(dat$priceg-dat$set_return>0,'win','lose')
+```
+
+This result in a dataset of 73 variables and 1,580 observations.
+
+# Exploratory Data Analysis
+
+We treat observations as cross-sectional rather than panel data. This makes our learners perform screening similar to what value investing strategies do based on one-year windows of annual data. The merit is that we can rely on powerful predicting algorithms such as random forest, but the downside is that we must assume random effects of year and individual stocks. We can see the data is fairly distributed by years and stock symbols. 
+
+```{r,,message=FALSE, warning=FALSE}
+#Year spread
+g<-ggplot(dat, aes(x=i,fill=winloss))+geom_histogram()
+g<-g+xlab('Years')+ylab('Stock Count')+scale_fill_discrete(name="Win or Lose\nAgainst SET TRI")
+
+#Symbol spread
+h<-ggplot(dat, aes(x=symbol,fill=winloss))+stat_count()
+h<-h+xlab('Stock Symbols')+ylab('Stock Count')+scale_fill_discrete(name="Win or Lose\nAgainst SET TRI")
+h<-h+scale_x_discrete(breaks=NULL) #hide x ticks
+#Plot both
+grid.arrange(g,h,ncol=1)
+```
+
+# Modeling
+
+We prepare randomly training and testing sets at 60/40 ratio. This results in 948 observations in ```training``` set and 632 observations in ```testing``` set. We also removed variables associated with year indicator, symbols, SET TRI return and price growth since it interferes with the training. The models used are support vector machine, boosted logistic regression and random forest. Also leave ```backtest``` data frame for backtesting.
+
+```{r,results='hide'}
+#Leave a dataset for backtesting
+backtest<-dat
+
+#Remove all unnecessary variables for training
+dat<-subset(dat,select=-c(i,symbol,set_return,priceg))
+
+#Create training and testing sets
+inTrain <- createDataPartition(dat$winloss,p=0.6,list=FALSE)
+training<-dat[inTrain,]
+testing<-dat[-inTrain,]
+backtest<-backtest[-inTrain,]
+```
+
+## Support Vector Machine
+
+We use c-classification support vector machine with linear kernel and gamma of 1/68.
+
+```{r, cache=TRUE,results='hide'}
+fit<-svm(winloss~.,data=training, type='C',kernel='linear')
+```
+
+Testing reveals out-of-sample 64.72% accuracy. We also get 54.76% out-of-sample sensitivity, meaning 54.76% of stocks we labelled as market beaters are actually so.
+
+```{r}
+pred<-predict(fit,newdata=testing)
+confusionMatrix(pred,testing$winloss,positive = 'win')
+```
+
+Following this classifier will give an average return (%) of:
+```{r}
+mean(backtest[backtest$winloss==pred,]$priceg)
+```
+
+## Boosted Logistic Regression
+
+The boosted logit with 150 iterations and step-size reduction of 0.1 with 25 repetitions of bootstrap cross-validation.
+
+```{r,cache=TRUE,results='hide'}
+fit<-train(winloss~.,data=training, method='gbm')
+```
+
+64 out of 68 features have an influence on the dependent variable. The variable importance of top-ten most influential variables are shown below.
+
+```{r}
+ggplot(varImp(fit),top=10)
+```
+
+This gives a slightly inferior out-of-sample accuracy of 63.13% and a much worse sensitivity of 43.54% respectively.
+
+```{r}
+pred<-predict(fit,newdata=testing)
+confusionMatrix(pred,testing$winloss,positive = 'win')
+```
+
+Following this classifier will give an average return (%) of:
+```{r}
+mean(backtest[backtest$winloss==pred,]$priceg)
+```
+
+## Random Forest Classification
+
+We grow 500 classification trees with 25 repetitions of bootstrap cross-validation. The cutoff for voting is 50%.
+
+```{r, cache=TRUE,results='hide'}
+fit<-train(winloss~.,data=training, method='rf')
+```
+
+The variable importance of top-ten most influential variables are shown below.
+
+```{r}
+ggplot(varImp(fit),top=10)
+```
+
+This gives the best result so far with 85.13% accuracy and 79.25% sensitivity.
+
+```{r}
+pred<-predict(fit,newdata=testing)
+confusionMatrix(pred,testing$winloss,positive = 'win')
+```
+
+Following this classifier will give an average return (%) of:
+```{r}
+mean(backtest[backtest$winloss==pred,]$priceg)
+```
+
+# Conclusion
+
+All our models has a better than random accuracy and sensitivity (except for logit boost). They are also shown to perform reasonably in the backtest (20.19%, 14.60% and 20.08% respectively). Random forest has the highest accuracy and sensitivity; nonetheless it performs worse than support vector machine in the backtest. This is because our models have several limitations:
+
+* We predict if a stock 'beats the market' but not 'by how much' so the discrepancy in accuracy/sensitivity and backtest performances between random forest and svm.
+
+* We assume random effects among years and stocks and treat which might not necessarily hold.
+
+* We treat the dataset as cross-sectional not panel as it naturally is.
+
+* We exclude some data because of NAs.
+
+One of the most noteworthy point is that according to variable importance, traditional value strategy indicators such as Joel Greenblatt's earning yields and Piotroski's F-score appear to be significant. Value investing does make sense in Thai market.

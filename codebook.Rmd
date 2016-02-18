@@ -1,0 +1,190 @@
+---
+title: "Codebook"
+author: "Charin Polpanumas"
+date: "February 18, 2559 BE"
+output:
+  html_document:
+    toc: true
+    number_sections: true
+    theme: spacelab
+---
+
+# Data Overview
+The ```tidy Thai stock dataset``` includes annual fundamental data of 463 Thai stocks in ```udf.csv``` and annual return of SET TRI in ```set_return.csv``` from 2002-2015. Monetary unit is THB.
+
+This codebook demonstrates how fundamental data on Thai stocks from the [Gurufocus](http://gurufocus.com) and SET TRI from [Stock Exchange of Thailand](http://set.or.th) are transformed into the tidy format used in this [analysis](index.html).
+
+# Getting and Cleaning Data
+## Thai Stock Data
+The data on Thai stock fundamentals are obtained from [Gurufocus API](http://gurufocus.com). The symbols associated wit the stock market was obtained by using a filter on the website and saved to ```symbols.csv```. We download JSON associated with this and save them to the ```stocks``` folder.
+```{r, eval=FALSE}
+library(jsonlite)
+library(httr)
+
+#Run script on 14/2/2016
+
+#Token: financials, price
+api_string <-'MY_API_STRING'
+
+#Read symbols
+symbols<-read.csv('symbols.csv')
+
+#Loop writing to stocks/
+for (i in symbols$x) {
+    request_string<-paste0(api_string,i,'/financials')
+    j<-fromJSON(request_string)
+    s <-toJSON(j)
+    write(s,paste0('stocks/',i))
+}
+```
+
+## SET TRI and Annual Returns
+
+The data on SET TRI (Total Return Index) are obtained from [Stock Exchange of Thailand](http://set.or.th) as ```set.html```. We seletively pick the first and last days of 2002-2015 in order to calculate the annual returns (%) from the respective years. The result is then saved to ```set_return.csv```.
+
+```{r, eval=FALSE}
+library(XML)
+
+#Download and save as set.html
+download.file(url='http://www.set.or.th/set/fetchfile.do?filename=roi/market.xls',destfile = 'set.html')
+
+#Read as html table
+se<-readHTMLTable('set.html',header=TRUE)
+
+#Convert to data.frame
+se<-as.data.frame(se)
+
+#Edit column names
+colnames(se)<-gsub('NULL.','',colnames(se))
+
+#Convert date
+se$datetime<-as.Date(se$Date,format='%d %b %Y')
+
+#Get first and last days of 2002-2015
+fdf<-data.frame()
+ldf<-data.frame()
+for (i in 2002:2015) {
+    first<-min(se[year(se$datetime)==i,]$datetime)
+    last<-max(se[year(se$datetime)==i,]$datetime)
+    fdf<-rbind(fdf,se[se$datetime==as.Date(first),])
+    ldf<-rbind(ldf,se[se$datetime==as.Date(last),])
+}
+
+#Calculate return for each year
+f<-as.numeric(gsub(',','',levels(fdf$SET.TRI)[fdf$SET.TRI]))
+l<-as.numeric(gsub(',','',levels(ldf$SET.TRI)[ldf$SET.TRI]))
+final<-data.frame(i=2002:2015,set_return=(l/f-1)*100)
+
+#Save to set_return.csv
+write.csv(final,file='set_return.csv',row.names = FALSE)
+```
+
+## Cleaning and Making the Tidy Thai Stock Dataset
+We process the data from ```stocks``` folder and ```set_return.csv``` to make the tidy Thai stock dataset saved in ```udf.csv```. The process includes:
+
+* Remove rows with trailing twelve months (TTM) data.
+* Convert year-month format of year indicator (```i```) to year only.
+* Change variable names to lowercase, remove non-alphanumeric characters, trim spaces.
+* Convert all columns except dates from character to numeric.
+* Add forward price (price next year) as ```fwd_price```.
+* Add price growth as ```priceg``` calculated by ```fwd_price/monthendstockprice```. Note that this price growth is forward-looking, which suits our analysis of using current year fundamentals to forecast future price growth. For other applications, use with care.
+* Remove infinities and NaN, mostly resulted from creating ```priceg```.
+* Aggregate data for all stocks.
+* Join with ```set_return``` on year indicator(```i```) to give SET TRI growth rate as benchmark.
+* Save to ```udf.csv```.
+
+
+```{r, eval=FALSE}
+library(jsonlite)
+library(lubridate)
+library(stringr)
+library(plyr)
+library(zoo)
+
+#Set up list to contain each individual stock
+lst<-list()
+
+#Loop cleaning operations through all symbols
+for (stock_name in dir('stocks')){
+    
+    #Load stock info from json
+    j<-fromJSON(paste0('stocks/',stock_name))
+    
+    #Set symbol and year to data.frame
+    lst[[stock_name]]<-data.frame(symbol=rep(stock_name,length(j$financials$annuals$`Fiscal Year`)))
+    
+    #Bind all elements to data.frame
+    for (i in j$financials$annuals) {
+        lst[[stock_name]]<-cbind(lst[[stock_name]],i)
+    }
+    
+    #Remove TTM
+    lst[[stock_name]]<-lst[[stock_name]][lst[[stock_name]][['i']]!='TTM',]
+    
+    #Convert yearmon to year
+    lst[[stock_name]][['i']]<-year(as.yearmon(lst[[stock_name]][['i']]))
+    
+    #Change header to lowercase, remove non-alphanumeric characters, trim spaces
+    colnames(lst[[stock_name]])<-str_to_lower(colnames(lst[[stock_name]]))
+    colnames(lst[[stock_name]])<-gsub('[^a-zA-Z0-9]','',colnames(lst[[stock_name]]))
+    colnames(lst[[stock_name]])<-trimws(colnames(lst[[stock_name]]))
+    
+    #Convert all columns except dates to numeric
+    for (i in 1:length(lst[[stock_name]])){
+        if (!grepl('(filing|symbol|^i$)',colnames(lst[[stock_name]])[i],ignore.case = TRUE)) {
+            lst[[stock_name]][,i]<-as.numeric(as.character(lst[[stock_name]][,i]))
+        }
+    }
+    
+    #Add forward price and price growth in %
+    end_price <-lst[[stock_name]][['monthendstockprice']]
+    fwd_price<-c()
+    for (k in 1:(length(end_price)-1)) {
+        fwd_price[k]<-end_price[k+1]
+    }
+    fwd_price[length(end_price)]<-NA
+    lst[[stock_name]]$fwd_price <- fwd_price
+    lst[[stock_name]]$priceg<- round((fwd_price/end_price-1)*100,3)
+    
+    #Remove infinities and NaN
+    lst[[stock_name]]$priceg<-gsub('(NaN|Inf|-Inf)',NA,lst[[stock_name]]$priceg)
+    #Have to convert back because gsubbed
+    lst[[stock_name]]$priceg<-as.numeric(lst[[stock_name]]$priceg)
+}
+
+#Combine all data.frames in list
+udf <- ldply(lst, data.frame)
+
+#Join with set_return on i
+set_return<-read.csv('set_return.csv')
+udf<-join(udf,set_return)
+
+#Save to udf.csv
+write.csv(udf,file='udf.csv',row.names=FALSE)
+```
+
+# Variable Description
+The dataset includes annual fundamental data of 463 Thai stocks from 2002-2015. The variables are divided into 7 groups same as the financial statement format of [Gurufocus](http://gurufocus.com) namely:
+
+* ```Income Statement```: column 4-31
+* ```Balance Sheet```: column 32-81
+* ```Cash Flow Statement```: column 82-115
+* ```Valuation Ratios```: column  116-127 and 188
+* ```Valuation and Quality Indicators```: column 128-154
+* ```Common Size Ratios```: column 155-174
+* ```Per Share Data```: column 175-185
+
+Other variables include:
+
+* ```.id```, ```symbol```: stock symbols (column 1,2)
+* ```i```: year indicator (column 3)
+* ```fwd_price```: forward price (column 186)
+* ```priceg```: forward growth (%) (column 187). At year t, priceg = (price year t+1) / (price at year t)
+* ```set_return```: annual SET TRI return (%) (column 189)
+
+The list of variables in ```udf.csv``` is as follows. Note that some variables appear in several groups. For instance, ```monthendstockprice``` and ```monthendstockprice.1```.
+
+```{r}
+udf<-read.csv('udf.csv')
+colnames(udf)
+```
