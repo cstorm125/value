@@ -82,7 +82,7 @@ img {
 
 <div id="executive-summary" class="section level1">
 <h1><span class="header-section-number">1</span> Executive Summary</h1>
-<p>We set out to find whether value investing strategy such as Joel Greenblatt’s earning yields and Piotroski’s F-score can actually beat the Thai stock market. The fundamental data are obtained from <a href="http://gurufocus.com">Gurufocus</a> while the benchmark SET TRI is obtained from <a href="http://set.or.th">Stock Exchange of Thailand</a>. We perform support vector machine, boosted logistic regression and random forest classification based on the data, as well as a backtest to verify the models. Most our models perform better than a coin toss with random forest achieving the highest accuracy and sensitivity of 85.13% and 79.25% respectively (20.08% annual return).</p>
+<p>We set out to find whether value investing strategy such as Joel Greenblatt’s earning yields and Piotroski’s F-score can actually beat the Thai stock market. The fundamental data are obtained from <a href="http://gurufocus.com">Gurufocus</a> while the benchmark SET TRI is obtained from <a href="http://set.or.th">Stock Exchange of Thailand</a>. We perform support vector machine, boosted logistic regression and random forest classification based on the data, as well as a backtest to verify the models. Most our models perform better than a coin toss with random forest achieving the highest accuracy and sensitivity of 85.13% and 79.25% respectively (58.05% annual return). The average annual SET TRI return is 21.19%.</p>
 <p>Visit our github respository <a href="https://github.com/cstorm125/value/">here</a></p>
 </div>
 <div id="data-processing" class="section level1">
@@ -211,8 +211,8 @@ confusionMatrix(pred,testing$winloss,positive = 'win')</code></pre>
 ##        'Positive' Class : win             
 ## </code></pre>
 <p>Following this classifier will give an average return (%) of:</p>
-<pre class="r"><code>mean(backtest[backtest$winloss==pred,]$priceg)</code></pre>
-<pre><code>## [1] 20.18826</code></pre>
+<pre class="r"><code>mean(backtest[backtest$winloss==pred &amp; pred=='win',]$priceg)</code></pre>
+<pre><code>## [1] 65.59239</code></pre>
 </div>
 <div id="boosted-logistic-regression" class="section level2">
 <h2><span class="header-section-number">4.2</span> Boosted Logistic Regression</h2>
@@ -251,8 +251,8 @@ confusionMatrix(pred,testing$winloss,positive = 'win')</code></pre>
 ##        'Positive' Class : win            
 ## </code></pre>
 <p>Following this classifier will give an average return (%) of:</p>
-<pre class="r"><code>mean(backtest[backtest$winloss==pred,]$priceg)</code></pre>
-<pre><code>## [1] 14.60703</code></pre>
+<pre class="r"><code>mean(backtest[backtest$winloss==pred &amp; pred=='win',]$priceg)</code></pre>
+<pre><code>## [1] 65.73453</code></pre>
 </div>
 <div id="random-forest-classification" class="section level2">
 <h2><span class="header-section-number">4.3</span> Random Forest Classification</h2>
@@ -291,13 +291,13 @@ confusionMatrix(pred,testing$winloss,positive = 'win')</code></pre>
 ##        'Positive' Class : win             
 ## </code></pre>
 <p>Following this classifier will give an average return (%) of:</p>
-<pre class="r"><code>mean(backtest[backtest$winloss==pred,]$priceg)</code></pre>
-<pre><code>## [1] 20.07919</code></pre>
+<pre class="r"><code>mean(backtest[backtest$winloss==pred &amp; pred=='win',]$priceg)</code></pre>
+<pre><code>## [1] 58.05055</code></pre>
 </div>
 </div>
 <div id="conclusion" class="section level1">
 <h1><span class="header-section-number">5</span> Conclusion</h1>
-<p>All our models has a better than random accuracy and sensitivity (except for logit boost). They are also shown to perform reasonably in the backtest (20.19%, 14.60% and 20.08% respectively). Random forest has the highest accuracy and sensitivity; nonetheless it performs worse than support vector machine in the backtest. This is because our models have several limitations:</p>
+<p>All our models has a better than random accuracy and sensitivity (except for logit boost). They are also shown to perform reasonably in the backtest (65.59%, 65.73% and 58.05% respectively). Random forest has the highest accuracy and sensitivity; nonetheless it performs worse than support vector machine in the backtest. This is because our models have several limitations:</p>
 <ul>
 <li><p>We predict if a stock ‘beats the market’ but not ‘by how much’ so the discrepancy in accuracy/sensitivity and backtest performances between random forest and svm.</p></li>
 <li><p>We assume random effects among years and stocks and treat which might not necessarily hold.</p></li>

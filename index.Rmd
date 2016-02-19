@@ -11,7 +11,7 @@ output:
 
 # Executive Summary
 
-We set out to find whether value investing strategy such as Joel Greenblatt's earning yields and Piotroski's F-score can actually beat the Thai stock market. The fundamental data are obtained from [Gurufocus](http://gurufocus.com) while the benchmark SET TRI is obtained from [Stock Exchange of Thailand](http://set.or.th). We perform support vector machine, boosted logistic regression and random forest classification based on the data, as well as a backtest to verify the models. Most our models perform better than a coin toss with random forest achieving the highest accuracy and sensitivity of 85.13% and 79.25% respectively (20.08% annual return).
+We set out to find whether value investing strategy such as Joel Greenblatt's earning yields and Piotroski's F-score can actually beat the Thai stock market. The fundamental data are obtained from [Gurufocus](http://gurufocus.com) while the benchmark SET TRI is obtained from [Stock Exchange of Thailand](http://set.or.th). We perform support vector machine, boosted logistic regression and random forest classification based on the data, as well as a backtest to verify the models. Most our models perform better than a coin toss with random forest achieving the highest accuracy and sensitivity of 85.13% and 79.25% respectively (58.05% annual return). The average annual SET TRI return is 21.19%.
 
 Visit our github respository [here](https://github.com/cstorm125/value/)
 
@@ -145,7 +145,7 @@ confusionMatrix(pred,testing$winloss,positive = 'win')
 
 Following this classifier will give an average return (%) of:
 ```{r}
-mean(backtest[backtest$winloss==pred,]$priceg)
+mean(backtest[backtest$winloss==pred & pred=='win',]$priceg)
 ```
 
 ## Boosted Logistic Regression
@@ -171,7 +171,7 @@ confusionMatrix(pred,testing$winloss,positive = 'win')
 
 Following this classifier will give an average return (%) of:
 ```{r}
-mean(backtest[backtest$winloss==pred,]$priceg)
+mean(backtest[backtest$winloss==pred & pred=='win',]$priceg)
 ```
 
 ## Random Forest Classification
@@ -197,12 +197,12 @@ confusionMatrix(pred,testing$winloss,positive = 'win')
 
 Following this classifier will give an average return (%) of:
 ```{r}
-mean(backtest[backtest$winloss==pred,]$priceg)
+mean(backtest[backtest$winloss==pred & pred=='win',]$priceg)
 ```
 
 # Conclusion
 
-All our models has a better than random accuracy and sensitivity (except for logit boost). They are also shown to perform reasonably in the backtest (20.19%, 14.60% and 20.08% respectively). Random forest has the highest accuracy and sensitivity; nonetheless it performs worse than support vector machine in the backtest. This is because our models have several limitations:
+All our models has a better than random accuracy and sensitivity (except for logit boost). They are also shown to perform reasonably in the backtest (65.59%, 65.73% and 58.05% respectively). Random forest has the highest accuracy and sensitivity; nonetheless it performs worse than support vector machine in the backtest. This is because our models have several limitations:
 
 * We predict if a stock 'beats the market' but not 'by how much' so the discrepancy in accuracy/sensitivity and backtest performances between random forest and svm.
 
