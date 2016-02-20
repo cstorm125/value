@@ -8,3 +8,5 @@ plyr
 e1071
 randomForest
 gridExtra
+MASS
+neuralnet

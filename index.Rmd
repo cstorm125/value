@@ -11,7 +11,7 @@ output:
 
 # Executive Summary
 
-We set out to find whether value investing strategy such as Joel Greenblatt's earning yields and Piotroski's F-score can actually beat the Thai stock market. The fundamental data are obtained from [Gurufocus](http://gurufocus.com) while the benchmark SET TRI is obtained from [Stock Exchange of Thailand](http://set.or.th). We perform support vector machine, boosted logistic regression and random forest classification based on the data, as well as a backtest to verify the models. Most our models perform better than a coin toss with random forest achieving the highest accuracy and precision of 85.13% and 87.59% respectively (58.05% annual return). The average annual SET TRI return is 21.19%.
+We set out to find whether value investing strategy such as Joel Greenblatt's earning yields and Piotroski's F-score can actually beat the Thai stock market. The fundamental data are obtained from [Gurufocus](http://gurufocus.com) while the benchmark SET TRI is obtained from [Stock Exchange of Thailand](http://set.or.th). We perform support vector machine, boosted logistic regression, random forest classification and neural networks based on the data, as well as a backtest to verify the models. Most our models perform better than a coin toss with random forest achieving the highest accuracy and precision of 85.13% and 87.59% respectively (58.05% annual return). The average annual SET TRI return is 21.19%.
 
 Visit our github respository [here](https://github.com/cstorm125/value/)
 
@@ -114,7 +114,7 @@ grid.arrange(g,h,ncol=1)
 
 # Modeling
 
-We prepare randomly training and testing sets at 60/40 ratio. This results in 948 observations in ```training``` set and 632 observations in ```testing``` set. We also removed variables associated with year indicator, symbols, SET TRI return and price growth since it interferes with the training. The models used are support vector machine, boosted logistic regression and random forest. Also leave ```backtest``` data frame for backtesting.
+We prepare randomly training and testing sets at 60/40 ratio. This results in 948 observations in ```training``` set and 632 observations in ```testing``` set. We also removed variables associated with year indicator, symbols, SET TRI return and price growth since it interferes with the training. The models used are support vector machine, boosted logistic regression, random forest and neural networks. Also leave ```backtest``` data frame for backtesting.
 
 ```{r,results='hide'}
 #Leave a dataset for backtesting
@@ -202,9 +202,54 @@ Following this classifier will give an average return (%) of:
 mean(backtest[backtest$winloss==pred & pred=='win',]$priceg)
 ```
 
+## Neural Networks
+The ```winloss``` variable has to be converted to 1 (win) and 0 (lose) for the training and testing sets. Formula is created using all variables in the training set.
+
+```{r, results='hide'}
+training$winloss<-ifelse(training$winloss=='win',1,0)
+testing$winloss<-ifelse(testing$winloss=='win',1,0)
+
+#Create formula
+#Covariates
+covariate<-colnames(training[-69])
+covariate<-paste(covariate,collapse='+')
+#Dependent
+dependent<-colnames(training[69])
+#Join
+fol <- paste(dependent,covariate,sep='~')
+fol<-as.formula(fol)
+```
+
+We use 2 hidden layers with 7 neurons each layer. This is derived by the rule of thump of ```no.of samples in training set/2*(degree of freedom)```. The threshold is 0.01, training for 8 times. The algorithm is resilient backpropagation with weight backtracking.
+
+```{r, cache=TRUE,results='hide'}
+fit<-neuralnet(fol,data=training,hidden=c(7,7),rep=10)
+```
+
+The plot below shows our neural network.
+```{r}
+plot.nn(fit,rep='best')
+```
+
+This gives the accuracy of 51.11% and precision of 47.19%. This is considerably worse than other learners.
+
+```{r}
+covariate_df <-testing[-69]
+comp<-compute(fit,covariate_df,rep=8)
+comp<-unlist(comp$net.result)
+pred<-ifelse(comp>0.5,1,0)
+confusionMatrix(pred,testing$winloss,positive='1')
+```
+
+Following this classifier will give an average return (%) of:
+```{r}
+pred<-ifelse(pred==1,'win','lose')
+mean(backtest[backtest$winloss==pred & pred=='win',]$priceg)
+```
+
 # Conclusion
 
-All our models has a better than random accuracy and precision. They are also shown to perform reasonably in the backtest (65.59%, 65.73% and 58.05% respectively). Random forest has the highest accuracy and precision; nonetheless it performs worse than support vector machine in the backtest. This is because our models have several limitations:
+All our models has a better than random accuracy and precision. They are also shown to perform reasonably in the backtest (65.59%, 65.73%, 58.05% and 61.78% respectively). Random forest has the highest accuracy and precision; nonetheless it performs worse than other learners in the backtest. This is because our models have several limitations:
 
 * We predict if a stock 'beats the market' but not 'by how much' so the discrepancy in accuracy/precision and backtest performances between random forest and svm.
 
