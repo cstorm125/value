@@ -11,7 +11,7 @@ output:
 
 # Executive Summary
 
-We set out to find whether value investing strategy such as Joel Greenblatt's earning yields and Piotroski's F-score can actually beat the Thai stock market. The fundamental data are obtained from [Gurufocus](http://gurufocus.com) while the benchmark SET TRI is obtained from [Stock Exchange of Thailand](http://set.or.th). We perform support vector machine, boosted logistic regression and random forest classification based on the data, as well as a backtest to verify the models. Most our models perform better than a coin toss with random forest achieving the highest accuracy and sensitivity of 85.13% and 79.25% respectively (58.05% annual return). The average annual SET TRI return is 21.19%.
+We set out to find whether value investing strategy such as Joel Greenblatt's earning yields and Piotroski's F-score can actually beat the Thai stock market. The fundamental data are obtained from [Gurufocus](http://gurufocus.com) while the benchmark SET TRI is obtained from [Stock Exchange of Thailand](http://set.or.th). We perform support vector machine, boosted logistic regression and random forest classification based on the data, as well as a backtest to verify the models. Most our models perform better than a coin toss with random forest achieving the highest accuracy and precision of 85.13% and 87.59% respectively (58.05% annual return). The average annual SET TRI return is 21.19%.
 
 Visit our github respository [here](https://github.com/cstorm125/value/)
 
@@ -36,6 +36,8 @@ library(parallel)
 library(plyr)
 #For rf
 library(randomForest)
+#For nnet
+library(neuralnet)
 #Set seed for reproducibility
 set.seed(385)
 ```
@@ -136,7 +138,7 @@ We use c-classification support vector machine with linear kernel and gamma of 1
 fit<-svm(winloss~.,data=training, type='C',kernel='linear')
 ```
 
-Testing reveals out-of-sample 64.72% accuracy. We also get 54.76% out-of-sample sensitivity, meaning 54.76% of stocks we labelled as market beaters are actually so.
+Testing reveals out-of-sample 64.72% accuracy. We also get 64.14% out-of-sample precision, meaning 64.14% of stocks we labelled as market beaters are actually so.
 
 ```{r}
 pred<-predict(fit,newdata=testing)
@@ -162,7 +164,7 @@ fit<-train(winloss~.,data=training, method='gbm')
 ggplot(varImp(fit),top=10)
 ```
 
-This gives a slightly inferior out-of-sample accuracy of 63.13% and a much worse sensitivity of 43.54% respectively.
+This gives a slightly inferior out-of-sample accuracy of 63.13% and a little better precision of 65.64% respectively.
 
 ```{r}
 pred<-predict(fit,newdata=testing)
@@ -188,7 +190,7 @@ The variable importance of top-ten most influential variables are shown below.
 ggplot(varImp(fit),top=10)
 ```
 
-This gives the best result so far with 85.13% accuracy and 79.25% sensitivity.
+This gives the best result so far with 85.13% accuracy and 87.59% precision.
 
 ```{r}
 pred<-predict(fit,newdata=testing)
@@ -202,9 +204,9 @@ mean(backtest[backtest$winloss==pred & pred=='win',]$priceg)
 
 # Conclusion
 
-All our models has a better than random accuracy and sensitivity (except for logit boost). They are also shown to perform reasonably in the backtest (65.59%, 65.73% and 58.05% respectively). Random forest has the highest accuracy and sensitivity; nonetheless it performs worse than support vector machine in the backtest. This is because our models have several limitations:
+All our models has a better than random accuracy and precision. They are also shown to perform reasonably in the backtest (65.59%, 65.73% and 58.05% respectively). Random forest has the highest accuracy and precision; nonetheless it performs worse than support vector machine in the backtest. This is because our models have several limitations:
 
-* We predict if a stock 'beats the market' but not 'by how much' so the discrepancy in accuracy/sensitivity and backtest performances between random forest and svm.
+* We predict if a stock 'beats the market' but not 'by how much' so the discrepancy in accuracy/precision and backtest performances between random forest and svm.
 
 * We assume random effects among years and stocks and treat which might not necessarily hold.
 
