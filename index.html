@@ -83,7 +83,11 @@ img {
 
 <div id="executive-summary" class="section level1">
 <h1><span class="header-section-number">1</span> Executive Summary</h1>
+<<<<<<< HEAD
 <p>We set out to find whether value investing strategy such as Joel Greenblatt’s earning yields and Piotroski’s F-score can actually beat the Thai stock market. The fundamental data are obtained from <a href="http://gurufocus.com">Gurufocus</a> while the benchmark SET TRI is obtained from <a href="http://set.or.th">Stock Exchange of Thailand</a>. We perform support vector machine, boosted logistic regression, random forest classification and neural networks based on the data, as well as a backtest to verify the models. Most our models perform better than a coin toss with random forest achieving the highest accuracy and precision of 85.13% and 87.59% respectively (58.05% annual return). The average annual SET TRI return is 21.19%.</p>
+=======
+<p>We set out to find whether value investing strategy such as Joel Greenblatt’s earning yields and Piotroski’s F-score can actually beat the Thai stock market. The fundamental data are obtained from <a href="http://www.morningstar.com">Morningstar</a> while the benchmark SET TRI is obtained from <a href="http://set.or.th">Stock Exchange of Thailand</a>. We perform support vector machine, boosted logistic regression, random forest classification and neural networks based on the data, as well as a backtest to verify the models. Most our models perform better than a coin toss with random forest achieving the highest accuracy and precision of 85.13% and 87.59% respectively (58.05% annual return). The average annual SET TRI return is 21.19%.</p>
+>>>>>>> gh-pages
 <p>Visit our github respository <a href="https://github.com/cstorm125/value/">here</a></p>
 </div>
 <div id="data-processing" class="section level1">
@@ -312,7 +316,11 @@ dependent&lt;-colnames(training[69])
 #Join
 fol &lt;- paste(dependent,covariate,sep='~')
 fol&lt;-as.formula(fol)</code></pre>
+<<<<<<< HEAD
 <p>We use 2 hidden layers with 7 neurons each layer. This is derived by the rule of thump of <code>no.of samples in training set/2*(degree of freedom)</code>. The threshold is 0.01, training for 9 times. The algorithm is resilient backpropagation with weight backtracking.</p>
+=======
+<p>We use 2 hidden layers with 7 neurons each layer. This is derived by the rule of thump of <code>no.of samples in training set/2*(degree of freedom)</code>. The threshold is 0.01, training for 8 times. The algorithm is resilient backpropagation with weight backtracking.</p>
+>>>>>>> gh-pages
 <pre class="r"><code>fit&lt;-neuralnet(fol,data=training,hidden=c(7,7),rep=10)</code></pre>
 <pre><code>## Warning: algorithm did not converge in 1 of 10 repetition(s) within the
 ## stepmax</code></pre>

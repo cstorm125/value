@@ -81,13 +81,13 @@ img {
 <div id="data-overview" class="section level1">
 <h1><span class="header-section-number">1</span> Data Overview</h1>
 <p>The <code>tidy Thai stock dataset</code> includes annual fundamental data of 463 Thai stocks in <code>udf.csv</code> and annual return of SET TRI in <code>set_return.csv</code> from 2002-2015. Monetary unit is THB.</p>
-<p>This codebook demonstrates how fundamental data on Thai stocks from the <a href="http://gurufocus.com">Gurufocus</a> and SET TRI from <a href="http://set.or.th">Stock Exchange of Thailand</a> are transformed into the tidy format used in this <a href="index.html">analysis</a>.</p>
+<p>This codebook demonstrates how fundamental data on Thai stocks from the <a href="http://www.morningstar.com">Morningstar</a> and SET TRI from <a href="http://set.or.th">Stock Exchange of Thailand</a> are transformed into the tidy format used in this <a href="index.html">analysis</a>.</p>
 </div>
 <div id="getting-and-cleaning-data" class="section level1">
 <h1><span class="header-section-number">2</span> Getting and Cleaning Data</h1>
 <div id="thai-stock-data" class="section level2">
 <h2><span class="header-section-number">2.1</span> Thai Stock Data</h2>
-<p>The data on Thai stock fundamentals are obtained from <a href="http://gurufocus.com">Gurufocus API</a>. The symbols associated wit the stock market was obtained by using a filter on the website and saved to <code>symbols.csv</code>. We download JSON associated with this and save them to the <code>stocks</code> folder.</p>
+<p>The data on Thai stock fundamentals are obtained from <a href="http://www.morningstar.com">Morningstar</a>. The symbols associated wit the stock market was obtained by using a filter on the website and saved to <code>symbols.csv</code>. We download JSON associated with this and save them to the <code>stocks</code> folder.</p>
 <pre class="r"><code>library(jsonlite)
 library(httr)
 
@@ -230,7 +230,7 @@ write.csv(udf,file='udf.csv',row.names=FALSE)</code></pre>
 </div>
 <div id="variable-description" class="section level1">
 <h1><span class="header-section-number">3</span> Variable Description</h1>
-<p>The dataset includes annual fundamental data of 463 Thai stocks from 2002-2015. The variables are divided into 7 groups same as the financial statement format of <a href="http://gurufocus.com">Gurufocus</a> namely:</p>
+<p>The dataset includes annual fundamental data of 463 Thai stocks from 2002-2015. The variables are divided into 7 groups same as the financial statement format of <a href="http://www.morningstar.com">Morningstar</a> namely:</p>
 <ul>
 <li><code>Income Statement</code>: column 4-31</li>
 <li><code>Balance Sheet</code>: column 32-81</li>
