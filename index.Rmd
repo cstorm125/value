@@ -220,11 +220,7 @@ fol <- paste(dependent,covariate,sep='~')
 fol<-as.formula(fol)
 ```
 
-<<<<<<< HEAD
 We use 2 hidden layers with 7 neurons each layer. This is derived by the rule of thump of ```no.of samples in training set/2*(degree of freedom)```. The threshold is 0.01, training for 9 times. The algorithm is resilient backpropagation with weight backtracking.
-=======
-We use 2 hidden layers with 7 neurons each layer. This is derived by the rule of thump of ```no.of samples in training set/2*(degree of freedom)```. The threshold is 0.01, training for 8 times. The algorithm is resilient backpropagation with weight backtracking.
->>>>>>> gh-pages
 
 ```{r, cache=TRUE,results='hide'}
 fit<-neuralnet(fol,data=training,hidden=c(7,7),rep=10)

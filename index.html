@@ -312,7 +312,7 @@ dependent&lt;-colnames(training[69])
 #Join
 fol &lt;- paste(dependent,covariate,sep='~')
 fol&lt;-as.formula(fol)</code></pre>
-<p>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD We use 2 hidden layers with 7 neurons each layer. This is derived by the rule of thump of <code>no.of samples in training set/2*(degree of freedom)</code>. The threshold is 0.01, training for 9 times. The algorithm is resilient backpropagation with weight backtracking. ======= We use 2 hidden layers with 7 neurons each layer. This is derived by the rule of thump of <code>no.of samples in training set/2*(degree of freedom)</code>. The threshold is 0.01, training for 8 times. The algorithm is resilient backpropagation with weight backtracking. &gt;&gt;&gt;&gt;&gt;&gt;&gt; gh-pages</p>
+<p>We use 2 hidden layers with 7 neurons each layer. This is derived by the rule of thump of <code>no.of samples in training set/2*(degree of freedom)</code>. The threshold is 0.01, training for 9 times. The algorithm is resilient backpropagation with weight backtracking.</p>
 <pre class="r"><code>fit&lt;-neuralnet(fol,data=training,hidden=c(7,7),rep=10)</code></pre>
 <pre><code>## Warning: algorithm did not converge in 1 of 10 repetition(s) within the
 ## stepmax</code></pre>
