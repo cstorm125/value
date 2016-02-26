@@ -5,9 +5,9 @@ We set out to find whether value investing strategy such as Joel Greenblatt's ea
 
 See the analysis [here](http://cstorm125.github.io/value/). Codes in index.Rmd
 
-## Codebook
+## Codebookเี
 
-The [codebook](http://cstorm125.github.io/value/codebook.html) demonstrates how fundamental data on Thai stocks from the [Gurufocus](http://gurufocus.com) and SET TRI from [Stock Exchange of Thailand](http://set.or.th) are transformed into the tidy format used in this [analysis](index.html).
+The [codebook](http://cstorm125.github.io/value/codebook.html) demonstrates how fundamental data on Thai stocks from the [Morningstar](http://morningstar.com) and SET TRI from [Stock Exchange of Thailand](http://set.or.th) are transformed into the tidy format used in this [analysis](index.html).
 
 ## udf.csv
 
