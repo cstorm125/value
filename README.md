@@ -15,7 +15,7 @@ The ```tidy Thai stock dataset``` includes annual fundamental data of 463 Thai s
 
 ## ```stocks``` Folder
 
-Contains JSON format of all stocks in Thai market obtained from [Gurufocus](www.gurufocus.com).
+Contains JSON format of all stocks in Thai market obtained from [Monringstar](http://morningstar.com).
 
 ## set_return.csv
 
